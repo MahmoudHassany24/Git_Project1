@@ -1,0 +1,34 @@
+Question:
+========
+To test ssh I read you need to use something like ssh -T user@domain.com:
+
+According to man ssh:
+
+ -T      Disable pseudo-terminal allocation.
+
+ -t      Force pseudo-terminal allocation.  This can be used to execute arbitrary screen-based programs on a remote
+         machine, which can be very useful, e.g. when implementing menu services.  Multiple -t options force tty alloca-
+         tion, even if ssh has no local tty.
+but I'm still not clear, even after reading this, what the purpose of using -T is when testing SSH.
+
+I read up on pseudo-terminals (https://linux.die.net/man/7/pty) but that didn't seem to help.
+
+============================================================
+Answer:
+======
+To have interactive prompt in your ssh shell, you need to have allocated PTY also on the server side. It is done automatically when you call ssh host.
+
+When you allocate this PTY on server, then your local terminal and the remote one are exchanging some additional messages (Terminal control characters), which give the remote shell information about the size of your local terminal, the remote can update title of your window and so on. This is something you really don't want when you want to transfer files or just pass the output "as it is". It would modify that and you would get generally something else. Again, this is done automatically in case you use scp or just noninteractive script as ssh host my_script.
+
+So far good. You don't need the switches. But things might not be always so simple.
+
+You might want to invoke some interactive shell as a command, for example ssh host /bin/zsh. This would work, but it will not be interactive. In this case, you need to use the -t switch to make it working properly: ssh -t host /bin/zsh.
+
+The same thing can go other way round. You might have server set up, that it will give you some output regardless the command you ask for. In that case, you really don't want to mess it up with any terminal control characters and then you might want to use ssh -T host to avoid this clutch.
+
+You can consider the -T also as the way to safe resources on server and as some "second line of defense". You can disable the TTY allocation in the server configuration, but what if ...
+
+The most common use case for the -T switch is
+
+ssh -T git@github.com
+to verify that you have set up your ssh keys properly to authenticate to github.
